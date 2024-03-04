@@ -17,7 +17,7 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
-add_executable(keyboard_controller_node src/main.cpp)
+add_executable(keyboard_controller_node src/main.cpp src/keyboard_controller_node.cpp)
 
 ament_target_dependencies(keyboard_controller_node rclcpp geometry_msgs std_msgs)
 

@@ -18,7 +18,11 @@ KeyboardControllerNode::KeyboardControllerNode():Node("keyboard_controller"){
  \____/\___/\_| \_/ \_/ \_| \_|\___/\_____/\_____/\____/\_| \_|
                                                                
 )";
-  publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
+  this->publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("turtle1/cmd_vel", 10);
+  this->key = ' ';
+  this->timer_=this->create_wall_timer(10ms,std::bind(&KeyboardControllerNode::PubCmdVelCallBack,this));
+  std::shared_ptr<std::thread> read_key_thread = std::make_shared<std::thread>(&KeyboardControllerNode::ReadKeyThread,this);
+  (*read_key_thread).detach();
 }
 
 
@@ -26,11 +30,10 @@ int KeyboardControllerNode::get_key(){
   int ch;
   struct termios oldt;
   struct termios newt;
-
-  // Store old settings, and copy to new settings
+  
   tcgetattr(STDIN_FILENO, &oldt);
   newt = oldt;
-  // Make required changes and apply the settings
+  
   newt.c_lflag &= ~(ICANON | ECHO);
   newt.c_iflag |= IGNBRK;
   newt.c_iflag &= ~(INLCR | ICRNL | IXON | IXOFF);
@@ -38,12 +41,53 @@ int KeyboardControllerNode::get_key(){
   newt.c_cc[VMIN] = 1;
   newt.c_cc[VTIME] = 0;
   tcsetattr(fileno(stdin), TCSANOW, &newt);
-
-  // Get the current character
+ 
   ch = getchar();
 
-  // Reapply old settings
   tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-
   return ch;
+}
+
+void KeyboardControllerNode::ReadKeyThread(){
+  while(rclcpp::ok())
+  {
+    key = get_key();
+    std::cout << "pushed : " << key << std::endl;
+    
+    if(key == 'i')
+    {
+        twist.linear.x += 0.01;
+        std::cout << "foward!" <<std::endl;
+    }
+    else if(key == ',')
+    {
+        twist.linear.x -= 0.01;
+        std::cout << "backward!" <<std::endl;
+    }else if(key == 'j')
+    {
+        twist.angular.z += 0.01;
+        std::cout << "left!" <<std::endl;
+    }else if(key == 'l')
+    {
+        twist.angular.z -= 0.01;
+        std::cout << "right!" <<std::endl;
+    }
+    else if(key == 'k')
+    {
+        twist.linear.x = 0.0;
+        twist.angular.z = 0.0;
+        std::cout << "stop!" <<std::endl;
+    }
+    else if (key == '\x03')
+    {
+        twist.linear.x = 0.0;
+        twist.angular.z = 0.0;
+        std::cout << "KEYBOARD WILL BE BACK..." << std::endl;
+        rclcpp::shutdown();
+    }
+  }
+}
+
+void KeyboardControllerNode::PubCmdVelCallBack(){
+  publisher_->publish(twist);
 }
