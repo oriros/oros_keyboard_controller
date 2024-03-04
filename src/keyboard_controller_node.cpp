@@ -20,9 +20,9 @@ KeyboardControllerNode::KeyboardControllerNode():Node("keyboard_controller"){
 )";
   publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
 }
-#include <stdio.h>
-#include <unistd.h>
-void KeyboardControllerNode::get_key(){
+
+
+int KeyboardControllerNode::get_key(){
   int ch;
   struct termios oldt;
   struct termios newt;
