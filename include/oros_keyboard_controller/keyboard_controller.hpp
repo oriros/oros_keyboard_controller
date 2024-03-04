@@ -19,4 +19,6 @@ class KeyboardControllerNode : public rclcpp::Node
         char key;
         rclcpp::TimerBase::SharedPtr timer_;
         geometry_msgs::msg::Twist twist;
+        float acc_x;
+        float acc_w;
 };
