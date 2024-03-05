@@ -20,29 +20,15 @@ KeyboardControllerNode::KeyboardControllerNode():Node("keyboard_controller"){
 )"<<std::endl;
 std::cout << R"(
          
-          _    _           
-         | |  | |          
-         | |  | |          
-         | |/\| |          
-         \  /\  /          
-          \/  \/           
-                           
-                           
-  ___      _____    ______ 
- / _ \    /  ___|   |  _  \
-/ /_\ \   \ `--.    | | | |
-|  _  |    `--. \   | | | |
-| | | |   /\__/ /   | |/ / 
-\_| |_/   \____/    |___/  
-                           
-                           
-          __   __          
-          \ \ / /          
-           \ V /           
-           /   \           
-          / /^\ \          
-          \/   \/          
-                                                                              
+        i 
+      j k l   
+        , 
+
+o : increase dx
+c : decrease dx
+u : increase dw
+m : decrease dw
+
 )"<<std::endl;
   
   this->publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("turtle1/cmd_vel", 10);
@@ -50,8 +36,10 @@ std::cout << R"(
   this->timer_=this->create_wall_timer(10ms,std::bind(&KeyboardControllerNode::PubCmdVelCallBack,this));
   std::shared_ptr<std::thread> read_key_thread = std::make_shared<std::thread>(&KeyboardControllerNode::ReadKeyThread,this);
   (*read_key_thread).detach();
-  this->acc_x = 0.02;
-  this->acc_w = 0.1;
+  this->acc_x = 0.01;
+  this->acc_w = 0.05;
+  this->max_lin_speed = 3.0;
+  this->max_ang_speed = 1.57;
 }
 
 
@@ -83,29 +71,53 @@ void KeyboardControllerNode::ReadKeyThread(){
     key = get_key();
     std::cout << "pushed : " << key << std::endl;
     
-    if(key == 'w')
+    if(key == 'i')
     {
         twist.linear.x += acc_x;
         std::cout << "foward!" <<std::endl;
     }
-    else if(key == 's')
+    else if(key == ',')
     {
         twist.linear.x -= acc_x;
         std::cout << "backward!" <<std::endl;
-    }else if(key == 'a')
+    }else if(key == 'j')
     {
         twist.angular.z += acc_w;
         std::cout << "left!" <<std::endl;
-    }else if(key == 'd')
+    }else if(key == 'l')
     {
         twist.angular.z -= acc_w;
         std::cout << "right!" <<std::endl;
     }
-    else if(key == 'x')
+    else if(key == 'k')
     {
         twist.linear.x = 0.0;
         twist.angular.z = 0.0;
         std::cout << "stop!" <<std::endl;
+    }
+    else if(key == 'o')
+    {
+        acc_x += 0.01;
+        acc_x=std::max(0.01,std::min(acc_x,0.1));
+        std::cout << "dx : " << acc_x <<std::endl;
+    }
+    else if(key == '.')
+    {
+        acc_x -= 0.01;
+        acc_x=std::max(0.01,std::min(acc_x,0.1));
+        std::cout << "dx : " << acc_x <<std::endl;
+    }
+    else if(key == 'u')
+    {
+        acc_w += 0.01;
+        acc_w=std::max(0.01,std::min(acc_w,0.2));
+        std::cout << "dw : " << acc_w <<std::endl;
+    }
+    else if(key == 'm')
+    {
+        acc_w -= 0.01;
+        acc_w=std::max(0.01,std::min(acc_w,0.2));
+        std::cout << "dw : " << acc_w <<std::endl;
     }
     else if (key == '\x03')
     {
@@ -114,9 +126,12 @@ void KeyboardControllerNode::ReadKeyThread(){
         std::cout << "KEYBOARD WILL BE BACK..." << std::endl;
         rclcpp::shutdown();
     }
+    
   }
 }
 
 void KeyboardControllerNode::PubCmdVelCallBack(){
+  twist.linear.x=std::max(-max_lin_speed,std::min(twist.linear.x,max_lin_speed));
+  twist.angular.z=std::max(-max_ang_speed,std::min(twist.angular.z,max_ang_speed));
   publisher_->publish(twist);
 }
